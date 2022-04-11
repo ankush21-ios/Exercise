@@ -10,16 +10,16 @@ import UIKit
 
 class HomeViewModel {
     
-    typealias BlockHomeData = () -> ()
+    typealias BlockHomeDataLoaded = () -> ()
     
     let collectionCellID = CollectionViewCellID.homeCollectionCell.rawValue
     var collectionLayout: CHTCollectionViewWaterfallLayout!
     var collectionCellSize = CGSize()
 
-    
+    var errorString: String?
     var homeData: HomeModel?
     var arrayHomeCollectionCellVM: [HomeCollectionCellViewModel]?
-    var blockHomeData: BlockHomeData?
+    var blockHomeDataLoaded: BlockHomeDataLoaded?
 }
 
 
@@ -44,13 +44,16 @@ extension HomeViewModel {
                 debugPrint(data)
                 self?.homeData = data
                 self?.createArrayHomeCollectionCellVM()
-                self?.blockHomeData?()
+                self?.errorString = nil
+                self?.blockHomeDataLoaded?()
                 
             case .failure(let error):
                 debugPrint(error)
+                
+                self?.errorString = error.rawValue
                 self?.homeData = nil
                 self?.createArrayHomeCollectionCellVM()
-                self?.blockHomeData?()
+                self?.blockHomeDataLoaded?()
             }
             
         }

@@ -8,10 +8,9 @@
 import Foundation
 import Alamofire
 
-enum NetworkError: Error {
-    case decodingError
-    case domainError
-    case urlError
+enum NetworkError: String, Error {
+    case decodingError = "Some technical issue occured."
+    case networkError = "Please check your internet connection it might be lost."
 }
 
 enum HttpMethod: String {
@@ -31,27 +30,40 @@ extension Resource {
     }
 }
 
+
+class Connectivity {
+    class func isConnectedToInternet() -> Bool {
+        return NetworkReachabilityManager()?.isReachable ?? false
+    }
+}
+
 class Webservice {
     
     func load<T>(resource: Resource<T>, completion: @escaping (Result<T, NetworkError>) -> Void) {
         
-        AF.request(resource.url).responseString { response in
-            debugPrint(response.value as Any)
+        if Connectivity.isConnectedToInternet() {
             
-            let data = response.value?.data(using: .utf8) ?? Data()
-            
-            do {
-                let model = try JSONDecoder().decode(T.self, from: data)
-                debugPrint(model)
-                completion(.success(model))
+            AF.request(resource.url).responseString { response in
+                debugPrint(response.value as Any)
                 
-            } catch let error {
-                debugPrint(error.localizedDescription)
-                completion(.failure(.decodingError))
+                let data = response.value?.data(using: .utf8) ?? Data()
+                
+                do {
+                    let model = try JSONDecoder().decode(T.self, from: data)
+                    debugPrint(model)
+                    completion(.success(model))
+                    
+                } catch let error {
+                    debugPrint(error.localizedDescription)
+                    completion(.failure(.decodingError))
+                }
+                
             }
             
+        } else {
+            completion(.failure(.networkError))
         }
-        
+                
     }
     
 }

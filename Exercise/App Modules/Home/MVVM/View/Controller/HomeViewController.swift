@@ -33,6 +33,11 @@ class HomeViewController: UIViewController {
         return collectionView
     }()
     
+    let refreshControl: UIRefreshControl = {
+        var refreshControl = UIRefreshControl()
+        return refreshControl
+    }()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -44,16 +49,27 @@ extension HomeViewController {
     
     func initialSetup() {
                 
-        homeViewModel.setupData()
-        homeViewModel.blockHomeData = {[weak self] in
+        homeViewModel.blockHomeDataLoaded = {[weak self] in
             
             DispatchQueue.main.async {
-                self?.setupData()
-                self?.collectionView.reloadData()
+                
+                self?.refreshControl.endRefreshing()
+                
+                if let error = self?.homeViewModel.errorString {
+                    
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        self?.alert(message: error)
+                    }
+                    
+                } else {
+                    self?.setupData()
+                    self?.collectionView.reloadData()
+                }
             }
             
         }
         
+        homeViewModel.setupData()
         setupUI()
     }
     
@@ -80,9 +96,15 @@ extension HomeViewController {
         collectionView.dataSource = self
                
         collectionView.topAnchor.constraint(equalTo: navigationView.topAnchor, constant: 50).isActive = true
-        collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 10.0).isActive = true
-        collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -10.0).isActive = true
+        collectionView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 10.0).isActive = true
+        collectionView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -10.0).isActive = true
         collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: 0).isActive = true
+        
+        //Refresh Control
+        collectionView.addSubview(refreshControl)
+        refreshControl.beginRefreshing()
+        refreshControl.addTarget(self, action: #selector(reloadData), for: UIControl.Event.valueChanged)
+
     }
     
     func setupData() {
@@ -90,6 +112,12 @@ extension HomeViewController {
     }
 }
 
+extension HomeViewController {
+    
+    @objc func reloadData() {
+        homeViewModel.getData()
+    }
+}
 
 //MARK: CollectionView Delegate Methods
 
